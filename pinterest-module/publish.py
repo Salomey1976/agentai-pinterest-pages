@@ -44,7 +44,7 @@ def main() -> int:
     response = httpx.post(
         CREATE_PIN_URL,
         json=payload,
-        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+        headers={"Authorization": "Bearer " + access_token, "Content-Type": "application/json"},
         timeout=30,
     )
     response.raise_for_status()
