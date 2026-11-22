@@ -16,7 +16,7 @@ def main() -> int:
     response = httpx.get(
         BOARDS_URL,
         params={"page_size": 100},
-        headers={"Authorization": f"Bearer ${access_token}"},
+        headers={"Authorization": "Bearer " + access_token},
         timeout=30,
     )
     response.raise_for_status()
