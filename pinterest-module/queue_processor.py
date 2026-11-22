@@ -16,9 +16,9 @@ from typing import Any
 
 import httpx
 
-from token_store import load_tokens, refresh_tokens
+from token_store import load_sandbox_tokens, load_tokens, refresh_tokens
 
-CREATE_PIN_URL = "https://api.pinterest.com/v5/pins"
+CREATE_PIN_URL = "https://api.pinterest.com/v5/pins"\nSANDBOX_PIN_URL = "https://api-sandbox.pinterest.com/v5/pins"
 QUEUE_ROOT = Path(r"G:\Мой диск\Pinterest")
 IMAGE_DIR = QUEUE_ROOT / "Изображения"
 QUEUE_DIR = QUEUE_ROOT / "Очередь"
@@ -30,7 +30,7 @@ ALLOWED_TYPES = {"image/jpeg", "image/png"}
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate or publish jobs from the Pinterest Drive queue.")
     parser.add_argument("--job", help="Job JSON filename in the Queue folder. Omit to process every JSON job.")
-    parser.add_argument("--publish", action="store_true", help="Actually create Pins and move completed jobs.")
+    parser.add_argument("--publish", action="store_true", help="Actually create Pins and move completed jobs.")\n    parser.add_argument("--sandbox", action="store_true", help="Use Pinterest Sandbox only; never production.")
     return parser.parse_args()
 
 
@@ -108,27 +108,29 @@ def archive(path: Path, folder: Path) -> Path:
     return Path(shutil.move(str(path), str(target)))
 
 
-def publish(payload: dict[str, Any]) -> dict[str, Any]:
-    tokens = load_tokens()
+def publish(payload: dict[str, Any], sandbox: bool = False) -> dict[str, Any]:
+    tokens = load_sandbox_tokens() if sandbox else load_tokens()
+    endpoint = SANDBOX_PIN_URL if sandbox else CREATE_PIN_URL
 
     def send(current: dict) -> httpx.Response:
         access_token = current.get("access_token")
         if not access_token:
-            raise RuntimeError("No access token found. Re-authorize at /auth/start.")
+            raise RuntimeError("No access token found. Authorize the selected Pinterest environment first.")
         return httpx.post(
-            CREATE_PIN_URL,
+            endpoint,
             json=payload,
             headers={"Authorization": "Bearer " + access_token, "Content-Type": "application/json"},
             timeout=60,
         )
 
     response = send(tokens)
-    if response.status_code == 401:
+    if not sandbox and response.status_code == 401:
         tokens = refresh_tokens(tokens)
         response = send(tokens)
     if response.is_error:
         detail = response.text[:1000].replace("\n", " ")
-        raise RuntimeError(f"Pinterest API {response.status_code}: {detail}")
+        environment = "Sandbox" if sandbox else "production"
+        raise RuntimeError(f"Pinterest {environment} API {response.status_code}: {detail}")
     return response.json()
 
 
@@ -152,12 +154,12 @@ def main() -> int:
                 print(json.dumps(report_payload(payload, image_path), ensure_ascii=False, indent=2))
                 continue
 
-            result = publish(payload)
+            result = publish(payload, sandbox=args.sandbox)
             archive(job_path, PUBLISHED_DIR)
             archive(image_path, PUBLISHED_DIR)
             receipt = PUBLISHED_DIR / f"{job_path.stem}.result.json"
             receipt.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-            print(f"Pin created: {result.get('id', 'unknown id')}")
+            environment = "Sandbox" if args.sandbox else "production"\n            print(f"Pin created in {environment}: {result.get('id', 'unknown id')}")
         except Exception as exc:
             failures += 1
             print(f"Job failed ({job_path.name}): {exc}", file=sys.stderr)
