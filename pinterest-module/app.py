@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import secrets
+from pathlib import Path
 from urllib.parse import urlencode
 
 import httpx
@@ -12,7 +13,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from token_store import save_tokens
 
-load_dotenv()
+# Credentials stay outside the cloned repository. Override only with PINTEREST_ENV_FILE.
+ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\pinterest.env"))
+load_dotenv(ENV_FILE)
 
 AUTHORIZE_URL = "https://www.pinterest.com/oauth/"
 TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
@@ -24,13 +27,13 @@ app = FastAPI(title="AgentAI Pinterest local module", docs_url=None, redoc_url=N
 def setting(name: str) -> str:
     value = os.getenv(name, "").strip()
     if not value:
-        raise HTTPException(status_code=500, detail=f"Missing {name} in .env")
+        raise HTTPException(status_code=500, detail=f"Missing {name} in {ENV_FILE}")
     return value
 
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "agentai-pinterest-local"}
+    return {"status": "ok", "service": "agentai-pinterest-local", "configuration_found": ENV_FILE.exists()}
 
 
 @app.get("/auth/start")
