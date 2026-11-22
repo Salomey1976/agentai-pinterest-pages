@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from token_store import save_tokens
 
 # Credentials stay outside the cloned repository. Override only with PINTEREST_ENV_FILE.
-ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\pinterest.env"))
+ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\.env"))
 load_dotenv(ENV_FILE)
 
 AUTHORIZE_URL = "https://www.pinterest.com/oauth/"
