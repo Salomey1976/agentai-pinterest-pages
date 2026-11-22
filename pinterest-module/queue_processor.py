@@ -16,7 +16,7 @@ from typing import Any
 
 import httpx
 
-from token_store import load_tokens
+from token_store import load_tokens, refresh_tokens
 
 CREATE_PIN_URL = "https://api.pinterest.com/v5/pins"
 QUEUE_ROOT = Path(r"G:\Мой диск\Pinterest")
@@ -110,15 +110,22 @@ def archive(path: Path, folder: Path) -> Path:
 
 def publish(payload: dict[str, Any]) -> dict[str, Any]:
     tokens = load_tokens()
-    access_token = tokens.get("access_token")
-    if not access_token:
-        raise RuntimeError("No access token found. Re-authorize at /auth/start.")
-    response = httpx.post(
-        CREATE_PIN_URL,
-        json=payload,
-        headers={"Authorization": "Bearer " + access_token, "Content-Type": "application/json"},
-        timeout=60,
-    )
+
+    def send(current: dict) -> httpx.Response:
+        access_token = current.get("access_token")
+        if not access_token:
+            raise RuntimeError("No access token found. Re-authorize at /auth/start.")
+        return httpx.post(
+            CREATE_PIN_URL,
+            json=payload,
+            headers={"Authorization": "Bearer " + access_token, "Content-Type": "application/json"},
+            timeout=60,
+        )
+
+    response = send(tokens)
+    if response.status_code == 401:
+        tokens = refresh_tokens(tokens)
+        response = send(tokens)
     response.raise_for_status()
     return response.json()
 
