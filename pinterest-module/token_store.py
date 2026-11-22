@@ -1,4 +1,4 @@
-"""Windows-only DPAPI storage for Pinterest OAuth tokens."""
+"""Windows-only DPAPI storage and refresh for Pinterest OAuth tokens."""
 from __future__ import annotations
 
 import base64
@@ -8,8 +8,13 @@ import os
 from ctypes import wintypes
 from pathlib import Path
 
-# Tokens remain outside the cloned repository and are protected for the Windows user.
+import httpx
+from dotenv import load_dotenv
+
+# Credentials and tokens remain outside the cloned repository.
+ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\pinterest.env"))
 TOKEN_PATH = Path(os.getenv("PINTEREST_TOKEN_FILE", r"C:\AgentAI\_shared\pinterest.tokens.json"))
+TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 
 
 class DATA_BLOB(ctypes.Structure):
@@ -50,3 +55,29 @@ def load_tokens() -> dict:
     wrapper = json.loads(TOKEN_PATH.read_text(encoding="utf-8"))
     decrypted = _crypt(base64.b64decode(wrapper["dpapi"]), protect=False)
     return json.loads(decrypted.decode("utf-8"))
+
+
+def refresh_tokens(tokens: dict | None = None) -> dict:
+    """Exchange the stored refresh token for a new access token and save it."""
+    tokens = tokens or load_tokens()
+    refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        raise RuntimeError("No refresh token found. Re-authorize at /auth/start.")
+
+    load_dotenv(ENV_FILE)
+    client_id = os.getenv("PINTEREST_CLIENT_ID", "").strip()
+    client_secret = os.getenv("PINTEREST_CLIENT_SECRET", "").strip()
+    if not client_id or not client_secret:
+        raise RuntimeError(f"Pinterest credentials are missing in {ENV_FILE}")
+
+    response = httpx.post(
+        TOKEN_URL,
+        data={"grant_type": "refresh_token", "refresh_token": refresh_token},
+        auth=(client_id, client_secret),
+        headers={"Accept": "application/json"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    refreshed = {**tokens, **response.json()}
+    save_tokens(refreshed)
+    return refreshed
