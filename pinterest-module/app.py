@@ -47,7 +47,7 @@ async def auth_start() -> RedirectResponse:
     return RedirectResponse(f"{AUTHORIZE_URL}?{urlencode(params)}")
 
 
-@app.get("/auth/callback", response_class=HTMLResponse)
+@app.get("/pinterest/callback", response_class=HTMLResponse)
 async def auth_callback(request: Request, code: str | None = None, state: str | None = None, error: str | None = None) -> str:
     if error:
         return f"<h1>Pinterest authorization was not completed</h1><p>{error}</p>"
