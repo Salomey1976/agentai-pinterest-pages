@@ -1,0 +1,5 @@
+.env
+tokens.json
+*.log
+__pycache__/
+.venv/
