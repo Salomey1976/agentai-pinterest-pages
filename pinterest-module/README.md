@@ -10,7 +10,7 @@ Local Windows service for a private Pinterest integration. It is deliberately se
 - publishes Pins from a local command line.
 
 ## Security
-Never commit `.env`, client secrets, access tokens, refresh tokens or logs. Use the exact redirect URI registered in Pinterest Developers.
+Never commit `.env`, client secrets, access tokens, refresh tokens or logs. The redirect URI must exactly match the value registered in Pinterest Developers: `http://localhost:8080/pinterest/callback`.
 
 ## Windows quick start
 ```powershell
@@ -19,11 +19,11 @@ py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env
-# Fill PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET and PINTEREST_REDIRECT_URI
-uvicorn app:app --host 127.0.0.1 --port 8787
+# Fill PINTEREST_CLIENT_ID and PINTEREST_CLIENT_SECRET.
+uvicorn app:app --host 127.0.0.1 --port 8080
 ```
 
-Open `http://127.0.0.1:8787/auth/start` in the same browser that will authorize Pinterest.
+Open `http://localhost:8080/auth/start` in the same browser that will authorize Pinterest.
 
 ## Publishing
 After successful authorization:
