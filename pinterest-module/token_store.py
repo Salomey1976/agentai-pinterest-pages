@@ -8,7 +8,8 @@ import os
 from ctypes import wintypes
 from pathlib import Path
 
-TOKEN_PATH = Path(__file__).with_name("tokens.json")
+# Tokens remain outside the cloned repository and are protected for the Windows user.
+TOKEN_PATH = Path(os.getenv("PINTEREST_TOKEN_FILE", r"C:\AgentAI\_shared\pinterest.tokens.json"))
 
 
 class DATA_BLOB(ctypes.Structure):
@@ -39,6 +40,7 @@ def _crypt(data: bytes, protect: bool) -> bytes:
 
 def save_tokens(tokens: dict) -> None:
     encrypted = _crypt(json.dumps(tokens).encode("utf-8"), protect=True)
+    TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
     TOKEN_PATH.write_text(json.dumps({"dpapi": base64.b64encode(encrypted).decode("ascii")}), encoding="utf-8")
 
 
