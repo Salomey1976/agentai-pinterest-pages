@@ -30,7 +30,7 @@ ALLOWED_TYPES = {"image/jpeg", "image/png"}
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate or publish jobs from the Pinterest Drive queue.")
     parser.add_argument("--job", help="Job JSON filename in the Queue folder. Omit to process every JSON job.")
-    parser.add_argument("--publish", action="store_true", help="Actually create Pins and move completed jobs.")\n    parser.add_argument("--sandbox", action="store_true", help="Use Pinterest Sandbox only; never production.")
+    parser.add_argument("--publish", action="store_true", help="Actually create Pins and move completed jobs.")\n    parser.add_argument("--sandbox", action="store_true", help="Use Pinterest Sandbox only; never production.")\n    parser.add_argument("--board-id", help="Override the job board ID, useful for a Sandbox test board.")
     return parser.parse_args()
 
 
