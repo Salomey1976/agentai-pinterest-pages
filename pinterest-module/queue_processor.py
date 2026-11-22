@@ -53,7 +53,7 @@ def job_files(selected: str | None) -> list[Path]:
 def load_job(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(f"Job file not found: {path}")
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
     required = ("board_id", "image", "title", "description", "link")
     missing = [key for key in required if not isinstance(data.get(key), str) or not data[key].strip()]
     if missing:
