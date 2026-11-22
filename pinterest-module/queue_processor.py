@@ -126,7 +126,9 @@ def publish(payload: dict[str, Any]) -> dict[str, Any]:
     if response.status_code == 401:
         tokens = refresh_tokens(tokens)
         response = send(tokens)
-    response.raise_for_status()
+    if response.is_error:
+        detail = response.text[:1000].replace("\n", " ")
+        raise RuntimeError(f"Pinterest API {response.status_code}: {detail}")
     return response.json()
 
 
