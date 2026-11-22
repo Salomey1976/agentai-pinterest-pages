@@ -12,7 +12,7 @@ import httpx
 from dotenv import load_dotenv
 
 # Credentials and tokens remain outside the cloned repository.
-ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\pinterest.env"))
+ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\.env"))
 TOKEN_PATH = Path(os.getenv("PINTEREST_TOKEN_FILE", r"C:\AgentAI\_shared\pinterest.tokens.json"))
 TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 
