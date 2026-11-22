@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 # Credentials and tokens remain outside the cloned repository.
 ENV_FILE = Path(os.getenv("PINTEREST_ENV_FILE", r"C:\AgentAI\_shared\.env"))
 TOKEN_PATH = Path(os.getenv("PINTEREST_TOKEN_FILE", r"C:\AgentAI\_shared\pinterest.tokens.json"))
+SANDBOX_TOKEN_PATH = Path(os.getenv("PINTEREST_SANDBOX_TOKEN_FILE", r"C:\AgentAI\_shared\pinterest.sandbox.tokens.json"))
 TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 
 
@@ -43,22 +44,40 @@ def _crypt(data: bytes, protect: bool) -> bytes:
         kernel32.LocalFree(target.pbData)
 
 
-def save_tokens(tokens: dict) -> None:
+def _save(path: Path, tokens: dict) -> None:
     encrypted = _crypt(json.dumps(tokens).encode("utf-8"), protect=True)
-    TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
-    TOKEN_PATH.write_text(json.dumps({"dpapi": base64.b64encode(encrypted).decode("ascii")}), encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"dpapi": base64.b64encode(encrypted).decode("ascii")}), encoding="utf-8")
 
 
-def load_tokens() -> dict:
-    if not TOKEN_PATH.exists():
-        raise FileNotFoundError("Pinterest is not authorized yet. Open /auth/start first.")
-    wrapper = json.loads(TOKEN_PATH.read_text(encoding="utf-8"))
+def _load(path: Path, label: str) -> dict:
+    if not path.exists():
+        raise FileNotFoundError(f"{label} is not authorized yet.")
+    wrapper = json.loads(path.read_text(encoding="utf-8"))
     decrypted = _crypt(base64.b64decode(wrapper["dpapi"]), protect=False)
     return json.loads(decrypted.decode("utf-8"))
 
 
+def save_tokens(tokens: dict) -> None:
+    _save(TOKEN_PATH, tokens)
+
+
+def load_tokens() -> dict:
+    return _load(TOKEN_PATH, "Pinterest production")
+
+
+def save_sandbox_token(access_token: str) -> None:
+    if not access_token.strip():
+        raise ValueError("Sandbox token is empty.")
+    _save(SANDBOX_TOKEN_PATH, {"access_token": access_token.strip()})
+
+
+def load_sandbox_tokens() -> dict:
+    return _load(SANDBOX_TOKEN_PATH, "Pinterest Sandbox")
+
+
 def refresh_tokens(tokens: dict | None = None) -> dict:
-    """Exchange the stored refresh token for a new access token and save it."""
+    """Exchange the stored production refresh token for a new access token and save it."""
     tokens = tokens or load_tokens()
     refresh_token = tokens.get("refresh_token")
     if not refresh_token:
