@@ -64,7 +64,7 @@ def refresh_tokens(tokens: dict | None = None) -> dict:
     if not refresh_token:
         raise RuntimeError("No refresh token found. Re-authorize at /auth/start.")
 
-    load_dotenv(ENV_FILE)
+    load_dotenv(ENV_FILE, override=True)
     client_id = os.getenv("PINTEREST_CLIENT_ID", "").strip()
     client_secret = os.getenv("PINTEREST_CLIENT_SECRET", "").strip()
     if not client_id or not client_secret:
